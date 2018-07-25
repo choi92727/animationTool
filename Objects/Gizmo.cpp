@@ -1,0 +1,341 @@
+#include "stdafx.h"
+#include "Gizmo.h"
+#include "./Framework/Bounding/BoundingFrustum.h"
+
+Gizmo::Gizmo::Gizmo()
+{
+	Init();
+}
+
+Gizmo::Gizmo::Gizmo(vector<D3DXVECTOR3>&& positions, vector<UINT>&& indices)
+{
+	Init();
+	indexData = std::move(indices);
+	vertexData.assign(positions.size(), VertexColor());
+	for (UINT i = 0; i < positions.size(); i++)
+	{
+		vertexData[i].position = positions[i];
+		vertexData[i].color = color;
+	}
+
+	CreateBuffer();
+}
+
+Gizmo::Gizmo::~Gizmo()
+{
+	SAFE_DELETE(buffer);
+	SAFE_DELETE(worldBuffer);
+	SAFE_DELETE(shader);
+	SAFE_RELEASE(vertexBuffer);
+	SAFE_RELEASE(indexBuffer);
+}
+
+void Gizmo::Gizmo::Render()
+{
+	worldBuffer->SetMatrix(localWorld * rootWorld);
+
+	UINT stride = sizeof(VertexColor);
+	UINT offset = 0;
+
+	D3D::GetDC()->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+	D3D::GetDC()->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	D3D::GetDC()->IASetPrimitiveTopology(topology);
+
+	worldBuffer->SetVSBuffer(1);
+	buffer->Data.Color = color;
+	buffer->Data.HighlightColor = highlightColor;
+	buffer->Data.IsHighlight = bHighlight;
+	buffer->SetPSBuffer(2);
+	shader->Render();
+
+	D3D::GetDC()->DrawIndexed(indexData.size(), 0, 0);
+}
+
+void Gizmo::Gizmo::UpdateVertexData()
+{
+	D3D::GetDC()->UpdateSubresource(vertexBuffer, 0, NULL, &vertexData[0], sizeof(VertexColor)*vertexData.size(), 0);
+}
+
+void Gizmo::Gizmo::Init()
+{
+	vertexBuffer = nullptr;
+	indexBuffer = nullptr;
+	bHighlight = false;
+	color = { 1, 1, 1, 1 };
+	highlightColor = { 1, 1, 0, 1 };
+	topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	shader = new Shader(Shaders + L"001_Gizmo.hlsl");
+	worldBuffer = new WorldBuffer();
+	D3DXMatrixIdentity(&rootWorld);
+	D3DXMatrixIdentity(&localWorld);
+	buffer = new Buffer();
+}
+
+void Gizmo::Gizmo::CreateBuffer()
+{
+	UINT vertexCount = vertexData.size();
+	UINT indexCount = indexData.size();
+
+	HRESULT hr;
+	D3D11_BUFFER_DESC desc;
+	D3D11_SUBRESOURCE_DATA data;
+
+	//1. Vertex Buffer
+	{
+		ZeroMemory(&desc, sizeof(D3D11_BUFFER_DESC));
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.ByteWidth = sizeof(VertexColor) * vertexCount;
+		desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+		ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
+		data.pSysMem = &vertexData[0];
+
+		hr = D3D::GetDevice()->CreateBuffer(&desc, &data, &vertexBuffer);
+		assert(SUCCEEDED(hr));
+	}
+
+	//2. Index Buffer
+	{
+		ZeroMemory(&desc, sizeof(D3D11_BUFFER_DESC));
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.ByteWidth = sizeof(UINT) * indexCount;
+		desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+
+		ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
+		data.pSysMem = &indexData[0];
+
+		hr = D3D::GetDevice()->CreateBuffer(&desc, &data, &indexBuffer);
+		assert(SUCCEEDED(hr));
+	}
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::Quad(D3DXVECTOR3 center, D3DXVECTOR3 normal, D3DXVECTOR3 up, float width, float height)
+{
+	Gizmo* gizmo = new Gizmo();
+
+	D3DXVECTOR3 Left;
+	// Calculate the quad corners
+	D3DXVec3Cross(&Left, &normal, &up);
+	D3DXVECTOR3 uppercenter = (up * height / 2) + center;
+	D3DXVECTOR3 UpperLeft = uppercenter - (Left * width / 2);
+	D3DXVECTOR3 UpperRight = uppercenter + (Left * width / 2);
+	D3DXVECTOR3 LowerLeft = UpperLeft - (up * height);
+	D3DXVECTOR3 LowerRight = UpperRight - (up * height);
+
+	// Set the position and texture coordinate for each
+	// vertex
+	D3DXCOLOR color = gizmo->color;
+	gizmo->vertexData.assign(4, VertexColor());
+	gizmo->vertexData[0] = { LowerLeft, color };
+	gizmo->vertexData[1] = { UpperLeft, color };
+	gizmo->vertexData[2] = { LowerRight, color };
+	gizmo->vertexData[3] = { UpperRight, color };
+
+	// Set the index buffer for each vertex, using
+	// clockwise winding
+	gizmo->indexData.assign(6, UINT());
+	gizmo->indexData = { 0,1,2 , 2,1,3 };
+	gizmo->topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	gizmo->CreateBuffer();
+
+	return gizmo;
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::Cube(D3DXVECTOR3 min, D3DXVECTOR3 max)
+{
+	Gizmo* gizmo = new Gizmo();
+
+	gizmo->vertexData.assign(8, VertexColor());
+
+	gizmo->vertexData[0] = VertexColor(D3DXVECTOR3(min.x, max.y, max.z), gizmo->color);
+	gizmo->vertexData[1] = VertexColor(D3DXVECTOR3(max.x, max.y, max.z), gizmo->color);
+	gizmo->vertexData[2] = VertexColor(D3DXVECTOR3(max.x, min.y, max.z), gizmo->color);
+	gizmo->vertexData[3] = VertexColor(D3DXVECTOR3(min.x, min.y, max.z), gizmo->color);
+	gizmo->vertexData[4] = VertexColor(D3DXVECTOR3(min.x, max.y, min.z), gizmo->color);
+	gizmo->vertexData[5] = VertexColor(D3DXVECTOR3(max.x, max.y, min.z), gizmo->color);
+	gizmo->vertexData[6] = VertexColor(D3DXVECTOR3(max.x, min.y, min.z), gizmo->color);
+	gizmo->vertexData[7] = VertexColor(D3DXVECTOR3(min.x, min.y, min.z), gizmo->color);
+
+	gizmo->indexData = { 0,1,2 , 0,2,3 , 2,1,5 , 2,5,6 , 3,2,6 , 3,6,7 , 0,3,7 , 0,7,4 , 1,0,4 , 1,4,5 , 7,6,5 , 7,5,4 };
+	gizmo->topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+
+	gizmo->CreateBuffer();
+
+	return gizmo;
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::Sphere(D3DXVECTOR3 center, float radius)
+{
+	return nullptr;
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::Frustum(BoundingFrustum* frustum)
+{
+	Gizmo* gizmo = new Gizmo();
+	Vector3* corners = new Vector3[8];
+	frustum->GetCorner(corners);
+	D3DXCOLOR color = gizmo->color;
+	// Fill in the vertices for the bottom of the box
+	gizmo->vertexData.push_back(VertexColor(corners[0].ToD3DXVECTOR3(), color));
+	gizmo->vertexData.push_back(VertexColor(corners[1].ToD3DXVECTOR3(), color));
+	gizmo->vertexData.push_back(VertexColor(corners[2].ToD3DXVECTOR3(), color));
+	gizmo->vertexData.push_back(VertexColor(corners[3].ToD3DXVECTOR3(), color));
+	gizmo->vertexData.push_back(VertexColor(corners[4].ToD3DXVECTOR3(), color));
+	gizmo->vertexData.push_back(VertexColor(corners[5].ToD3DXVECTOR3(), color));
+	gizmo->vertexData.push_back(VertexColor(corners[6].ToD3DXVECTOR3(), color));
+	gizmo->vertexData.push_back(VertexColor(corners[7].ToD3DXVECTOR3(), color));
+
+	SAFE_DELETE_ARRAY(corners);
+
+	gizmo->indexData = { 0,1 , 1,2 , 2,3 , 3,0 , 4,5 , 5,6 , 6,7 , 7,4 , 0,4 , 1,5 , 2,6 , 3,7 };
+	gizmo->topology = D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+	gizmo->CreateBuffer();
+	return gizmo;
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::Line(D3DXVECTOR3 start, D3DXVECTOR3 end)
+{
+	Gizmo* gizmo = new Gizmo();
+
+	gizmo->vertexData.assign(2, VertexColor());
+
+	gizmo->vertexData[0] = VertexColor(D3DXVECTOR3(start.x, start.y, start.z), gizmo->color);
+	gizmo->vertexData[1] = VertexColor(D3DXVECTOR3(end.x, end.y, end.z), gizmo->color);
+
+
+	gizmo->indexData = { 0,1 };
+	gizmo->topology = D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+
+	gizmo->CreateBuffer();
+
+	return gizmo;
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::Ray(D3DXVECTOR3 start, D3DXVECTOR3 dir, float length)
+{
+	Gizmo* gizmo = new Gizmo();
+
+	gizmo->vertexData.assign(2, VertexColor());
+
+	gizmo->vertexData[0] = VertexColor(D3DXVECTOR3(start.x, start.y, start.z), gizmo->color);
+	gizmo->vertexData[1] = VertexColor(D3DXVECTOR3(start.x + dir.x * length, start.y + dir.y * length, start.z + dir.z * length), gizmo->color);
+
+
+	gizmo->indexData = { 0,1 };
+	gizmo->topology = D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+
+	gizmo->CreateBuffer();
+
+	return gizmo;
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::WireCube(D3DXVECTOR3 min, D3DXVECTOR3 max)
+{
+	Gizmo* gizmo = new Gizmo();
+
+	gizmo->vertexData.assign(8, VertexColor());
+
+	gizmo->vertexData[0] = VertexColor(D3DXVECTOR3(min.x, max.y, max.z), gizmo->color);
+	gizmo->vertexData[1] = VertexColor(D3DXVECTOR3(max.x, max.y, max.z), gizmo->color);
+	gizmo->vertexData[2] = VertexColor(D3DXVECTOR3(max.x, min.y, max.z), gizmo->color);
+	gizmo->vertexData[3] = VertexColor(D3DXVECTOR3(min.x, min.y, max.z), gizmo->color);
+	gizmo->vertexData[4] = VertexColor(D3DXVECTOR3(min.x, max.y, min.z), gizmo->color);
+	gizmo->vertexData[5] = VertexColor(D3DXVECTOR3(max.x, max.y, min.z), gizmo->color);
+	gizmo->vertexData[6] = VertexColor(D3DXVECTOR3(max.x, min.y, min.z), gizmo->color);
+	gizmo->vertexData[7] = VertexColor(D3DXVECTOR3(min.x, min.y, min.z), gizmo->color);
+
+	gizmo->indexData = { 0,1 , 1,2 , 2,3 , 3,0 , 4,5 , 5,6 , 6,7 , 7,4 , 0,4 , 1,5 , 2,6 , 3,7 };
+	gizmo->topology = D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+
+	gizmo->CreateBuffer();
+
+	return gizmo;
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::WireSphere(D3DXVECTOR3 center, float radius)
+{
+	int sphereResolution = 30;
+	int sphereLineCount = (sphereResolution + 1) * 3;
+	int vertCount = sphereLineCount * 2;
+	Gizmo* gizmo = new Gizmo();
+	// We need two vertices per line, so we can allocate our vertices
+
+	gizmo->vertexData.assign(vertCount, VertexColor());
+
+	// Compute our step around each circle
+	float step = (float)D3DX_PI * 2 / sphereResolution;
+
+	// Used to track the index into our vertex array
+	int index = 0;
+	D3DXCOLOR color = gizmo->color;
+	// Create the loop on the XY plane first
+	for (float a = 0; a < (float)D3DX_PI * 2; a += step)
+	{
+		gizmo->vertexData[index++] = VertexColor(center + radius*D3DXVECTOR3(cosf(a), sinf(a), 0), color);
+		gizmo->vertexData[index++] = VertexColor(center + radius*D3DXVECTOR3(cosf(a + step), sinf(a + step), 0), color);
+	}
+
+	// Next on the XZ plane
+	for (float a = 0; a < (float)D3DX_PI * 2; a += step)
+	{
+		gizmo->vertexData[index++] = VertexColor(center + radius*D3DXVECTOR3(cosf(a), 0, sinf(a)), color);
+		gizmo->vertexData[index++] = VertexColor(center + radius*D3DXVECTOR3(cosf(a + step), 0, sinf(a + step)), color);
+	}
+
+	// Finally on the YZ plane
+	for (float a = 0; a < (float)D3DX_PI * 2; a += step)
+	{
+		gizmo->vertexData[index++] = VertexColor(center + radius*D3DXVECTOR3(0, cosf(a), sinf(a)), color);
+		gizmo->vertexData[index++] = VertexColor(center + radius*D3DXVECTOR3(0, cosf(a + step), sinf(a + step)), color);
+	}
+
+	gizmo->indexData.assign(vertCount, UINT());
+	for (int i = 0; i < vertCount; i++)
+	{
+		gizmo->indexData.push_back(i);
+	}
+
+	gizmo->topology = D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+	gizmo->CreateBuffer();
+	return gizmo;
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::Scale()
+{
+	Gizmo* gizmo = new Gizmo
+	(
+	{ D3DXVECTOR3(-0.4519059f, 0.4519059f, 0.0f), D3DXVECTOR3(-0.4519059f, 0.4519059f, 0.9038118f), D3DXVECTOR3(-0.4519059f, -0.4519059f, 0.9038118f), D3DXVECTOR3(-0.4519059f, -0.4519059f, 0.0f), D3DXVECTOR3(0.4519059f, 0.4519059f, 0.0f), D3DXVECTOR3(0.4519059f, 0.4519059f, 0.9038118f), D3DXVECTOR3(-0.4519059f, 0.4519059f, 0.9038118f), D3DXVECTOR3(-0.4519059f, 0.4519059f, 0.0f), D3DXVECTOR3(0.4519059f, -0.4519059f, 0.0f), D3DXVECTOR3(0.4519059f, -0.4519059f, 0.9038118f), D3DXVECTOR3(0.4519059f, 0.4519059f, 0.9038118f), D3DXVECTOR3(0.4519059f, 0.4519059f, 0.0f), D3DXVECTOR3(-0.4519059f, -0.4519059f, 0.0f), D3DXVECTOR3(-0.4519059f, -0.4519059f, 0.9038118f), D3DXVECTOR3(0.4519059f, -0.4519059f, 0.9038118f), D3DXVECTOR3(0.4519059f, -0.4519059f, 0.0f), D3DXVECTOR3(-0.4519059f, -0.4519059f, 0.9038118f), D3DXVECTOR3(-0.4519059f, 0.4519059f, 0.9038118f), D3DXVECTOR3(0.4519059f, 0.4519059f, 0.9038118f), D3DXVECTOR3(0.4519059f, -0.4519059f, 0.9038118f), D3DXVECTOR3(-0.4519059f, -0.4519059f, 0.0f), D3DXVECTOR3(0.4519059f, -0.4519059f, 0.0f), D3DXVECTOR3(0.4519059f, 0.4519059f, 0.0f), D3DXVECTOR3(-0.4519059f, 0.4519059f, 0.0f) }
+		, { 0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4, 8, 9, 10, 10, 11, 8, 12, 13, 14, 14, 15, 12, 16, 17, 18, 18, 19, 16, 20, 21, 22, 22, 23, 20 }
+	);
+
+	gizmo->topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	return gizmo;
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::Rotate()
+{
+	Gizmo* gizmo = new Gizmo
+	(
+	{ D3DXVECTOR3(0.8555959f, -0.03825768f, 0.07387591f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.8750901f, -0.03482031f, 1.21745E-10f), D3DXVECTOR3(0.8023366f, -0.04764872f, 0.1279567f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.8555959f, -0.03825768f, 0.07387591f), D3DXVECTOR3(0.7295831f, -0.06047713f, 0.1477517f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.8023366f, -0.04764872f, 0.1279567f), D3DXVECTOR3(0.6568297f, -0.07330552f, 0.1279567f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.7295831f, -0.06047713f, 0.1477517f), D3DXVECTOR3(0.7295831f, -0.06047713f, -0.1477517f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.6568297f, -0.07330553f, -0.1279567f), D3DXVECTOR3(0.8023366f, -0.04764872f, -0.1279567f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.7295831f, -0.06047713f, -0.1477517f), D3DXVECTOR3(0.8555959f, -0.03825768f, -0.07387582f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.8023366f, -0.04764872f, -0.1279567f), D3DXVECTOR3(0.8750901f, -0.03482031f, 1.21745E-10f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.8555959f, -0.03825768f, -0.07387582f), D3DXVECTOR3(0.2666126f, 0.7766161f, 0.0f), D3DXVECTOR3(0.2286974f, 0.6661729f, -0.04836776f), D3DXVECTOR3(0.2221922f, 0.6472238f, -5.979921E-09f), D3DXVECTOR3(0.2444024f, 0.7119199f, 0.06840233f), D3DXVECTOR3(0.2601074f, 0.7576669f, 0.04836775f), D3DXVECTOR3(0.2286974f, 0.6661729f, 0.04836775f), D3DXVECTOR3(0.8565058f, -0.06866174f, -4.687798E-11f), D3DXVECTOR3(0.8402017f, -0.07153661f, 0.06178666f), D3DXVECTOR3(0.8750901f, -0.03482031f, 1.21745E-10f), D3DXVECTOR3(0.8555959f, -0.03825768f, 0.07387591f), D3DXVECTOR3(0.8402017f, -0.07153661f, 0.06178666f), D3DXVECTOR3(0.7956579f, -0.07939088f, 0.1070175f), D3DXVECTOR3(0.8023366f, -0.04764872f, 0.1279567f), D3DXVECTOR3(0.73481f, -0.09012f, 0.1235731f), D3DXVECTOR3(0.7295831f, -0.06047713f, 0.1477517f), D3DXVECTOR3(0.7956579f, -0.07939088f, 0.1070175f), D3DXVECTOR3(0.6568297f, -0.07330552f, 0.1279567f), D3DXVECTOR3(0.6739621f, -0.1008491f, 0.1070175f), D3DXVECTOR3(0.73481f, -0.09012f, 0.1235731f), D3DXVECTOR3(0.6739621f, -0.1008491f, 0.1070175f), D3DXVECTOR3(0.6294184f, -0.1087034f, 0.06178655f), D3DXVECTOR3(0.6035704f, -0.08269656f, 0.07387579f), D3DXVECTOR3(0.5840762f, -0.08613393f, -1.994514E-08f), D3DXVECTOR3(0.6131142f, -0.1115782f, -1.208573E-08f), D3DXVECTOR3(0.6294184f, -0.1087034f, 0.06178655f), D3DXVECTOR3(0.6294184f, -0.1087034f, -0.06178657f), D3DXVECTOR3(0.6035705f, -0.08269657f, -0.07387583f), D3DXVECTOR3(0.6131142f, -0.1115782f, -1.208573E-08f), D3DXVECTOR3(0.6739621f, -0.1008491f, -0.1070175f), D3DXVECTOR3(0.6568297f, -0.07330553f, -0.1279567f), D3DXVECTOR3(0.6294184f, -0.1087034f, -0.06178657f), D3DXVECTOR3(0.7295831f, -0.06047713f, -0.1477517f), D3DXVECTOR3(0.6739621f, -0.1008491f, -0.1070175f), D3DXVECTOR3(0.73481f, -0.09012f, -0.1235731f), D3DXVECTOR3(0.8023366f, -0.04764872f, -0.1279567f), D3DXVECTOR3(0.7956579f, -0.07939088f, -0.1070175f), D3DXVECTOR3(0.73481f, -0.09012f, -0.1235731f), D3DXVECTOR3(0.8023366f, -0.04764872f, -0.1279567f), D3DXVECTOR3(0.7956579f, -0.07939088f, -0.1070175f), D3DXVECTOR3(0.8555959f, -0.03825768f, -0.07387582f), D3DXVECTOR3(0.8402017f, -0.07153661f, -0.06178656f), D3DXVECTOR3(0.8565058f, -0.06866174f, -4.687798E-11f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.6568297f, -0.07330552f, 0.1279567f), D3DXVECTOR3(0.6035704f, -0.08269656f, 0.07387579f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.5840762f, -0.08613393f, -1.994514E-08f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.6035705f, -0.08269657f, -0.07387583f), D3DXVECTOR3(0.6341127f, 0.4809631f, -2.745459E-08f), D3DXVECTOR3(0.6568297f, -0.07330553f, -0.1279567f), D3DXVECTOR3(0.73481f, -0.09012f, -0.1235731f), D3DXVECTOR3(0.6739621f, -0.1008491f, -0.1070175f), D3DXVECTOR3(0.7956579f, -0.07939088f, -0.1070175f), D3DXVECTOR3(0.8402017f, -0.07153661f, -0.06178656f), D3DXVECTOR3(0.6294184f, -0.1087034f, -0.06178657f), D3DXVECTOR3(0.6131142f, -0.1115782f, -1.208573E-08f), D3DXVECTOR3(0.8565058f, -0.06866174f, -4.687798E-11f), D3DXVECTOR3(0.6294184f, -0.1087034f, 0.06178655f), D3DXVECTOR3(0.8402017f, -0.07153661f, 0.06178666f), D3DXVECTOR3(0.7956579f, -0.07939088f, 0.1070175f), D3DXVECTOR3(0.6739621f, -0.1008491f, 0.1070175f), D3DXVECTOR3(0.73481f, -0.09012f, 0.1235731f), D3DXVECTOR3(0.2601074f, 0.7576669f, -0.04836776f), D3DXVECTOR3(0.2286974f, 0.6661729f, -0.04836776f), D3DXVECTOR3(0.2666126f, 0.7766161f, 0.0f), D3DXVECTOR3(0.2444024f, 0.7119199f, -0.06840233f), D3DXVECTOR3(0.2666126f, 0.7766161f, 0.0f), D3DXVECTOR3(0.2221922f, 0.6472238f, -5.979921E-09f), D3DXVECTOR3(0.2601074f, 0.7576669f, 0.04836775f), D3DXVECTOR3(0.2286974f, 0.6661729f, 0.04836775f), D3DXVECTOR3(0.2666126f, 0.7766161f, 0.0f), D3DXVECTOR3(-3.589167E-08f, 0.8211058f, 0.0f), D3DXVECTOR3(0.2601074f, 0.7576669f, -0.04836776f), D3DXVECTOR3(-3.501594E-08f, 0.8010713f, -0.04836776f), D3DXVECTOR3(0.2444024f, 0.7119199f, -0.06840233f), D3DXVECTOR3(-3.290172E-08f, 0.7527035f, -0.06840233f), D3DXVECTOR3(-3.078749E-08f, 0.7043357f, -0.04836776f), D3DXVECTOR3(0.2286974f, 0.6661729f, -0.04836776f), D3DXVECTOR3(0.2221922f, 0.6472238f, -5.979921E-09f), D3DXVECTOR3(-2.991175E-08f, 0.6843011f, -5.979921E-09f), D3DXVECTOR3(-3.078749E-08f, 0.7043357f, 0.04836775f), D3DXVECTOR3(0.2286974f, 0.6661729f, 0.04836775f), D3DXVECTOR3(0.2444024f, 0.7119199f, 0.06840233f), D3DXVECTOR3(-3.290172E-08f, 0.7527035f, 0.06840233f), D3DXVECTOR3(-3.501594E-08f, 0.8010713f, 0.04836775f), D3DXVECTOR3(0.2601074f, 0.7576669f, 0.04836775f), D3DXVECTOR3(-3.589167E-08f, 0.8211058f, 0.0f), D3DXVECTOR3(0.2666126f, 0.7766161f, 0.0f), D3DXVECTOR3(-3.501594E-08f, 0.8010713f, -0.04836776f), D3DXVECTOR3(-3.589167E-08f, 0.8211058f, 0.0f), D3DXVECTOR3(-0.2601076f, 0.7576669f, -0.04836776f), D3DXVECTOR3(-0.2666128f, 0.776616f, 0.0f), D3DXVECTOR3(-0.4920281f, 0.6321578f, -0.04836776f), D3DXVECTOR3(-0.46232f, 0.5939888f, -0.06840233f), D3DXVECTOR3(-0.2444026f, 0.7119199f, -0.06840233f), D3DXVECTOR3(-3.290172E-08f, 0.7527035f, -0.06840233f), D3DXVECTOR3(-0.2286976f, 0.6661729f, -0.04836776f), D3DXVECTOR3(-3.078749E-08f, 0.7043357f, -0.04836776f), D3DXVECTOR3(-0.5043336f, 0.6479679f, 0.0f), D3DXVECTOR3(-0.6874022f, 0.4491023f, 0.0f), D3DXVECTOR3(-0.67063f, 0.4381445f, -0.04836776f), D3DXVECTOR3(-0.6301381f, 0.4116898f, -0.06840233f), D3DXVECTOR3(-0.5896463f, 0.3852352f, -0.04836776f), D3DXVECTOR3(-0.4326119f, 0.5558199f, -0.04836776f), D3DXVECTOR3(-0.7959802f, 0.2015696f, 0.0f), D3DXVECTOR3(-0.7765587f, 0.1966514f, -0.04836776f), D3DXVECTOR3(-0.729671f, 0.1847778f, -0.06840233f), D3DXVECTOR3(-0.6827832f, 0.1729042f, -0.04836776f), D3DXVECTOR3(-0.572874f, 0.3742773f, -5.979921E-09f), D3DXVECTOR3(-0.4203064f, 0.5400098f, -5.979921E-09f), D3DXVECTOR3(-0.8183013f, -0.06780636f, 0.0f), D3DXVECTOR3(-0.7983351f, -0.06615191f, -0.04836776f), D3DXVECTOR3(-0.7501326f, -0.06215774f, -0.06840233f), D3DXVECTOR3(-0.7019301f, -0.05816356f, -0.04836776f), D3DXVECTOR3(-0.6633617f, 0.167986f, -5.979921E-09f), D3DXVECTOR3(-0.6827832f, 0.1729042f, 0.04836775f), D3DXVECTOR3(-0.5896463f, 0.3852352f, 0.04836775f), D3DXVECTOR3(-0.7335998f, -0.3217866f, -0.04836776f), D3DXVECTOR3(-0.6893058f, -0.3023575f, -0.06840233f), D3DXVECTOR3(-0.6450118f, -0.2829284f, -0.04836776f), D3DXVECTOR3(-0.6266648f, -0.2748806f, -5.979921E-09f), D3DXVECTOR3(-0.6819639f, -0.05650912f, -5.979921E-09f), D3DXVECTOR3(-0.7019301f, -0.05816356f, 0.04836775f), D3DXVECTOR3(-0.7519467f, -0.3298344f, 0.0f), D3DXVECTOR3(-0.5893673f, -0.5425507f, -0.04836776f), D3DXVECTOR3(-0.5537819f, -0.5097921f, -0.06840233f), D3DXVECTOR3(-0.5181966f, -0.4770336f, -0.04836776f), D3DXVECTOR3(-0.5034567f, -0.4634645f, -5.979921E-09f), D3DXVECTOR3(-0.6450118f, -0.2829284f, 0.04836775f), D3DXVECTOR3(-0.6041072f, -0.5561198f, 0.0f), D3DXVECTOR3(-0.3908032f, -0.722141f, 0.0f), D3DXVECTOR3(-0.3812678f, -0.7045211f, -0.04836776f), D3DXVECTOR3(-0.3582473f, -0.6619829f, -0.06840233f), D3DXVECTOR3(-0.3352268f, -0.6194448f, -0.04836776f), D3DXVECTOR3(-0.3256914f, -0.6018249f, -5.979921E-09f), D3DXVECTOR3(-0.3352268f, -0.6194448f, 0.04836775f), D3DXVECTOR3(-0.5181966f, -0.4770336f, 0.04836775f), D3DXVECTOR3(-0.1351495f, -0.809907f, 0.0f), D3DXVECTOR3(-0.1318519f, -0.7901458f, -0.04836776f), D3DXVECTOR3(-0.1238909f, -0.7424376f, -0.06840233f), D3DXVECTOR3(-0.1159298f, -0.6947296f, -0.04836776f), D3DXVECTOR3(-0.1126322f, -0.6749682f, -5.979921E-09f), D3DXVECTOR3(-0.1159298f, -0.6947296f, 0.04836775f), D3DXVECTOR3(0.1351496f, -0.809907f, 0.0f), D3DXVECTOR3(0.1318521f, -0.7901456f, -0.04836776f), D3DXVECTOR3(0.123891f, -0.7424375f, -0.06840233f), D3DXVECTOR3(0.1159299f, -0.6947295f, -0.04836776f), D3DXVECTOR3(0.1126323f, -0.6749682f, -5.979921E-09f), D3DXVECTOR3(0.3812678f, -0.7045211f, -0.04836776f), D3DXVECTOR3(0.3582473f, -0.6619829f, -0.06840233f), D3DXVECTOR3(0.3352268f, -0.6194448f, -0.04836776f), D3DXVECTOR3(0.3256914f, -0.6018249f, -5.979921E-09f), D3DXVECTOR3(0.1159299f, -0.6947295f, 0.04836775f), D3DXVECTOR3(0.3908032f, -0.722141f, 0.0f), D3DXVECTOR3(0.5893673f, -0.5425507f, -0.04836776f), D3DXVECTOR3(0.553782f, -0.5097921f, -0.06840233f), D3DXVECTOR3(0.5181966f, -0.4770336f, -0.04836776f), D3DXVECTOR3(0.5034568f, -0.4634645f, -5.979921E-09f), D3DXVECTOR3(0.3352268f, -0.6194448f, 0.04836775f), D3DXVECTOR3(0.123891f, -0.7424375f, 0.06840233f), D3DXVECTOR3(0.6041072f, -0.5561197f, 0.0f), D3DXVECTOR3(0.7519467f, -0.3298344f, 0.0f), D3DXVECTOR3(0.7335998f, -0.3217866f, -0.04836776f), D3DXVECTOR3(0.6893058f, -0.3023575f, -0.06840233f), D3DXVECTOR3(0.6450118f, -0.2829284f, -0.04836776f), D3DXVECTOR3(0.6266648f, -0.2748806f, -5.979921E-09f), D3DXVECTOR3(0.6450118f, -0.2829284f, 0.04836775f), D3DXVECTOR3(0.5181966f, -0.4770336f, 0.04836775f), D3DXVECTOR3(0.8183013f, -0.06780633f, 0.0f), D3DXVECTOR3(0.7983351f, -0.06615189f, -0.04836776f), D3DXVECTOR3(0.7501326f, -0.06215771f, -0.06840233f), D3DXVECTOR3(0.7019301f, -0.05816354f, -0.04836776f), D3DXVECTOR3(0.6819639f, -0.0565091f, -5.979921E-09f), D3DXVECTOR3(0.7019301f, -0.05816354f, 0.04836775f), D3DXVECTOR3(0.6893058f, -0.3023575f, 0.06840233f), D3DXVECTOR3(0.553782f, -0.5097921f, 0.06840233f), D3DXVECTOR3(0.3582473f, -0.6619829f, 0.06840233f), D3DXVECTOR3(0.7501326f, -0.06215771f, 0.06840233f), D3DXVECTOR3(0.7983351f, -0.06615189f, 0.04836775f), D3DXVECTOR3(0.7335998f, -0.3217866f, 0.04836775f), D3DXVECTOR3(0.5893673f, -0.5425507f, 0.04836775f), D3DXVECTOR3(0.3812678f, -0.7045211f, 0.04836775f), D3DXVECTOR3(0.1318521f, -0.7901456f, 0.04836775f), D3DXVECTOR3(-0.1238909f, -0.7424376f, 0.06840233f), D3DXVECTOR3(0.8183013f, -0.06780633f, 0.0f), D3DXVECTOR3(0.7519467f, -0.3298344f, 0.0f), D3DXVECTOR3(0.6041072f, -0.5561197f, 0.0f), D3DXVECTOR3(0.3908032f, -0.722141f, 0.0f), D3DXVECTOR3(0.1351496f, -0.809907f, 0.0f), D3DXVECTOR3(-0.1318519f, -0.7901458f, 0.04836775f), D3DXVECTOR3(-0.3812678f, -0.7045211f, 0.04836775f), D3DXVECTOR3(-0.3582473f, -0.6619829f, 0.06840233f), D3DXVECTOR3(-0.5537819f, -0.5097921f, 0.06840233f), D3DXVECTOR3(-0.1351495f, -0.809907f, 0.0f), D3DXVECTOR3(-0.3908032f, -0.722141f, 0.0f), D3DXVECTOR3(-0.5893673f, -0.5425507f, 0.04836775f), D3DXVECTOR3(-0.6041072f, -0.5561198f, 0.0f), D3DXVECTOR3(-0.7519467f, -0.3298344f, 0.0f), D3DXVECTOR3(-0.7335998f, -0.3217866f, 0.04836775f), D3DXVECTOR3(-0.6893058f, -0.3023575f, 0.06840233f), D3DXVECTOR3(-0.7501326f, -0.06215774f, 0.06840233f), D3DXVECTOR3(-0.729671f, 0.1847778f, 0.06840233f), D3DXVECTOR3(-0.8183013f, -0.06780636f, 0.0f), D3DXVECTOR3(-0.7983351f, -0.06615191f, 0.04836775f), D3DXVECTOR3(-0.7765587f, 0.1966514f, 0.04836775f), D3DXVECTOR3(-0.7959802f, 0.2015696f, 0.0f), D3DXVECTOR3(-0.67063f, 0.4381445f, 0.04836775f), D3DXVECTOR3(-0.6301381f, 0.4116898f, 0.06840233f), D3DXVECTOR3(-0.46232f, 0.5939888f, 0.06840233f), D3DXVECTOR3(-0.4326119f, 0.5558199f, 0.04836775f), D3DXVECTOR3(-0.6874022f, 0.4491023f, 0.0f), D3DXVECTOR3(-0.4920281f, 0.6321578f, 0.04836775f), D3DXVECTOR3(-0.2601076f, 0.7576669f, 0.04836775f), D3DXVECTOR3(-0.2444026f, 0.7119199f, 0.06840233f), D3DXVECTOR3(-0.2286976f, 0.6661729f, 0.04836775f), D3DXVECTOR3(-0.2221924f, 0.6472238f, -5.979921E-09f), D3DXVECTOR3(-0.5043336f, 0.6479679f, 0.0f), D3DXVECTOR3(-0.2666128f, 0.776616f, 0.0f), D3DXVECTOR3(-3.589167E-08f, 0.8211058f, 0.0f), D3DXVECTOR3(-3.501594E-08f, 0.8010713f, 0.04836775f), D3DXVECTOR3(-3.290172E-08f, 0.7527035f, 0.06840233f), D3DXVECTOR3(-3.078749E-08f, 0.7043357f, 0.04836775f), D3DXVECTOR3(-2.991175E-08f, 0.6843011f, -5.979921E-09f) }
+		, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 32, 31, 34, 35, 33, 36, 33, 35, 37, 38, 39, 36, 39, 38, 40, 38, 41, 42, 41, 38, 43, 44, 40, 45, 40, 44, 46, 45, 47, 48, 47, 45, 49, 50, 51, 51, 50, 46, 52, 53, 54, 50, 54, 53, 55, 53, 56, 55, 56, 57, 58, 55, 59, 60, 59, 55, 61, 62, 63, 64, 63, 62, 63, 64, 32, 64, 65, 32, 66, 67, 68, 66, 68, 69, 70, 66, 69, 70, 69, 71, 72, 70, 71, 72, 71, 73, 74, 72, 73, 74, 73, 75, 76, 77, 78, 79, 78, 77, 80, 79, 77, 80, 81, 79, 79, 81, 82, 81, 83, 82, 84, 82, 83, 84, 83, 85, 86, 85, 83, 87, 85, 86, 88, 89, 90, 91, 89, 88, 92, 93, 94, 95, 94, 93, 96, 97, 98, 99, 98, 97, 98, 99, 100, 101, 100, 99, 102, 100, 101, 103, 100, 102, 103, 102, 104, 105, 104, 102, 106, 104, 105, 104, 106, 107, 107, 106, 108, 109, 108, 106, 110, 108, 109, 108, 110, 111, 110, 112, 111, 113, 111, 112, 114, 115, 116, 117, 116, 115, 116, 117, 118, 118, 119, 116, 116, 119, 120, 120, 114, 116, 114, 120, 121, 122, 121, 120, 121, 122, 123, 124, 118, 117, 124, 125, 118, 126, 118, 125, 126, 127, 118, 118, 127, 119, 127, 128, 119, 119, 128, 129, 129, 122, 119, 120, 119, 122, 125, 130, 126, 131, 126, 130, 131, 132, 126, 127, 126, 132, 132, 133, 127, 128, 127, 133, 128, 133, 134, 134, 135, 128, 129, 128, 135, 135, 122, 129, 130, 136, 131, 137, 131, 136, 131, 137, 132, 138, 132, 137, 139, 132, 138, 133, 132, 139, 133, 139, 140, 140, 134, 133, 141, 134, 140, 134, 141, 142, 142, 135, 134, 137, 136, 143, 137, 143, 138, 144, 138, 143, 138, 144, 139, 145, 139, 144, 146, 139, 145, 139, 146, 147, 147, 140, 139, 148, 140, 147, 140, 148, 141, 149, 143, 136, 143, 149, 150, 143, 150, 144, 151, 144, 150, 144, 151, 145, 152, 145, 151, 153, 145, 152, 145, 153, 146, 146, 153, 154, 154, 148, 146, 147, 146, 148, 155, 150, 149, 155, 156, 150, 157, 150, 156, 150, 157, 151, 158, 151, 157, 151, 158, 159, 151, 159, 152, 152, 159, 153, 160, 153, 159, 161, 153, 160, 153, 161, 162, 162, 154, 153, 156, 163, 157, 164, 157, 163, 164, 165, 157, 157, 165, 158, 165, 166, 158, 158, 166, 159, 159, 166, 160, 167, 160, 166, 168, 160, 167, 160, 168, 161, 163, 169, 164, 170, 164, 169, 164, 170, 165, 171, 165, 170, 165, 171, 166, 172, 166, 171, 173, 166, 172, 166, 173, 167, 167, 173, 168, 170, 169, 174, 170, 174, 171, 175, 171, 174, 176, 171, 175, 172, 171, 176, 177, 172, 176, 172, 177, 173, 173, 177, 178, 178, 168, 173, 179, 174, 169, 174, 179, 180, 174, 180, 175, 181, 175, 180, 182, 175, 181, 176, 175, 182, 183, 176, 182, 176, 183, 177, 177, 183, 184, 184, 178, 177, 178, 184, 185, 178, 185, 168, 186, 180, 179, 186, 187, 180, 188, 180, 187, 189, 180, 188, 181, 180, 189, 190, 181, 189, 182, 181, 190, 182, 190, 183, 191, 183, 190, 192, 183, 191, 183, 192, 193, 193, 184, 183, 187, 194, 188, 195, 188, 194, 188, 195, 189, 196, 189, 195, 197, 189, 196, 189, 197, 190, 190, 197, 191, 198, 191, 197, 199, 191, 198, 191, 199, 192, 192, 199, 200, 200, 201, 192, 193, 192, 201, 201, 202, 193, 184, 193, 202, 202, 185, 184, 203, 200, 199, 204, 200, 203, 200, 204, 205, 205, 206, 200, 201, 200, 206, 202, 201, 206, 202, 206, 207, 202, 207, 185, 185, 207, 208, 185, 208, 209, 209, 168, 185, 204, 210, 205, 211, 205, 210, 205, 211, 206, 212, 206, 211, 212, 213, 206, 207, 206, 213, 213, 214, 207, 208, 207, 214, 208, 214, 215, 215, 209, 208, 215, 216, 209, 217, 209, 216, 209, 217, 168, 161, 168, 217, 217, 218, 161, 162, 161, 218, 218, 154, 162, 219, 215, 214, 215, 219, 216, 220, 216, 219, 216, 220, 221, 221, 218, 216, 217, 216, 218, 222, 221, 220, 222, 223, 221, 224, 221, 223, 225, 221, 224, 221, 225, 218, 154, 218, 225, 225, 148, 154, 148, 225, 226, 226, 227, 148, 141, 148, 227, 223, 228, 224, 229, 224, 228, 226, 224, 229, 224, 226, 225, 229, 228, 230, 227, 229, 230, 226, 229, 227, 231, 230, 228, 230, 231, 232, 230, 232, 227, 233, 227, 232, 227, 233, 141, 142, 141, 233, 233, 234, 142, 235, 142, 234, 135, 142, 235, 236, 232, 231, 232, 236, 237, 232, 237, 233, 234, 233, 237, 237, 238, 234, 239, 234, 238, 239, 240, 234, 235, 234, 240, 235, 240, 135, 241, 135, 240, 122, 135, 241, 241, 123, 122, 242, 237, 236, 242, 243, 237, 238, 237, 243, 243, 244, 238, 245, 238, 244, 238, 245, 239, 246, 239, 245, 239, 246, 240, 247, 240, 246, 240, 247, 241, 248, 241, 247, 123, 241, 248 }
+	);
+
+	gizmo->topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	return gizmo;
+}
+
+Gizmo::Gizmo * Gizmo::Gizmos::Translate()
+{
+	Gizmo* gizmo = new Gizmo
+	(
+	{ D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(-8.742278E-09f, 0.2f, 0.0f),  D3DXVECTOR3(0.09999999f, 0.1732051f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(-0.1f, 0.1732051f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(-0.1732051f, 0.1f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(-0.2f, 3.019916E-08f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(-0.1732051f, -0.09999995f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(-0.1000001f, -0.173205f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(-9.298245E-08f, -0.2f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0999999f, -0.1732051f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.173205f, -0.1000001f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.2f, 0.0f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.1732051f, 0.09999999f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.09999999f, 0.1732051f, 0.0f),  D3DXVECTOR3(0.09999999f, 0.1732051f, 0.0f),  D3DXVECTOR3(-8.742278E-09f, 0.2f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.0f),  D3DXVECTOR3(-0.1f, 0.1732051f, 0.0f),  D3DXVECTOR3(-0.1732051f, 0.1f, 0.0f),  D3DXVECTOR3(-0.2f, 3.019916E-08f, 0.0f),  D3DXVECTOR3(-0.1732051f, -0.09999995f, 0.0f),  D3DXVECTOR3(-0.1000001f, -0.173205f, 0.0f),  D3DXVECTOR3(-9.298245E-08f, -0.2f, 0.0f),  D3DXVECTOR3(0.0999999f, -0.1732051f, 0.0f),  D3DXVECTOR3(0.173205f, -0.1000001f, 0.0f),  D3DXVECTOR3(0.2f, 0.0f, 0.0f),  D3DXVECTOR3(0.1732051f, 0.09999999f, 0.0f),  D3DXVECTOR3(0.09999999f, 0.1732051f, 0.0f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f),  D3DXVECTOR3(0.0f, 0.0f, 0.9f) }
+		, { 0, 1, 2, 0, 3, 1, 3, 4, 1, 3, 5, 4, 5, 6, 4, 5, 7, 6, 7, 8, 6, 7, 9, 8, 9, 10, 8, 9, 11, 10, 11, 12, 10, 11, 13, 12, 13, 14, 12, 13, 15, 14, 15, 16, 14, 15, 17, 16, 17, 18, 16, 17, 19, 18, 19, 20, 18, 19, 21, 20, 21, 22, 20, 21, 23, 22, 23, 24, 22, 23, 0, 24, 25, 26, 27, 26, 28, 27, 28, 29, 27, 29, 30, 27, 30, 31, 27, 31, 32, 27, 32, 33, 27, 33, 34, 27, 34, 35, 27, 35, 36, 27, 36, 37, 27, 37, 38, 27, 39, 40, 41, 40, 42, 41, 42, 43, 41, 43, 44, 41, 44, 45, 41, 45, 46, 41, 46, 47, 41, 47, 48, 41, 48, 49, 41, 49, 50, 41, 50, 51, 41, 51, 39, 41 }
+	);
+
+	gizmo->topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	return gizmo;
+}

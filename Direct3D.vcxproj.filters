@@ -1,0 +1,481 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="Systems\Keyboard.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Mouse.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Time.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Window.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\D3D.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Viewer\Perspective.h">
+      <Filter>Viewer</Filter>
+    </ClInclude>
+    <ClInclude Include="Viewer\Viewport.h">
+      <Filter>Viewer</Filter>
+    </ClInclude>
+    <ClInclude Include="Viewer\Camera.h">
+      <Filter>Viewer</Filter>
+    </ClInclude>
+    <ClInclude Include="Viewer\FirstPerson.h">
+      <Filter>Viewer</Filter>
+    </ClInclude>
+    <ClInclude Include="Program.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Utilities\BinaryFile.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Executes\Execute.h">
+      <Filter>Executes</Filter>
+    </ClInclude>
+    <ClInclude Include="Executes\ExeGui.h">
+      <Filter>Executes</Filter>
+    </ClInclude>
+    <ClInclude Include="Executes\GuiSettings.h">
+      <Filter>Executes</Filter>
+    </ClInclude>
+    <ClInclude Include="Renders\GlobalBuffers.h">
+      <Filter>Renders</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\Math.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\Path.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Renders\Shader.h">
+      <Filter>Renders</Filter>
+    </ClInclude>
+    <ClInclude Include="Renders\ShaderBuffer.h">
+      <Filter>Renders</Filter>
+    </ClInclude>
+    <ClInclude Include="Renders\States.h">
+      <Filter>Renders</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\String.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Renders\VertexLayouts.h">
+      <Filter>Renders</Filter>
+    </ClInclude>
+    <ClInclude Include="Renders\Material.h">
+      <Filter>Renders</Filter>
+    </ClInclude>
+    <ClInclude Include="Interfaces\ICloneable.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\Json.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Renders\RenderTarget.h">
+      <Filter>Renders</Filter>
+    </ClInclude>
+    <ClInclude Include="Viewer\Orthographic.h">
+      <Filter>Viewer</Filter>
+    </ClInclude>
+    <ClInclude Include="Fbx\Exporter.h">
+      <Filter>Fbx</Filter>
+    </ClInclude>
+    <ClInclude Include="Fbx\Type.h">
+      <Filter>Fbx</Filter>
+    </ClInclude>
+    <ClInclude Include="Fbx\Utility.h">
+      <Filter>Fbx</Filter>
+    </ClInclude>
+    <ClInclude Include="Renders\Texture.h">
+      <Filter>Renders</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ModelMeshPart.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Model.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ModelMesh.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Executes\DrawModel.h">
+      <Filter>Executes</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ModelBone.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Fbx\BoneWeights.h">
+      <Filter>Fbx</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ModelAnimClip.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ModelAnimPlayer.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\GameRender.h">
+      <Filter>Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Executes\ExportMesh.h">
+      <Filter>Executes</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\GameModel.h">
+      <Filter>Objects\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\GameSkyBox.h">
+      <Filter>Objects\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\GameWorld.h">
+      <Filter>Objects\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Fbx\XmlToAnim.h">
+      <Filter>Fbx</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\Xml.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Executes\ExportAnim.h">
+      <Filter>Executes</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\AnimationKeyframe.h">
+      <Filter>Objects\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\AnimationClip.h">
+      <Filter>Objects\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\AnimationBinder.h">
+      <Filter>Objects\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\AnimationBlender.h">
+      <Filter>Objects\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\GameAnimationModel.h">
+      <Filter>Objects\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Units\GameUnit.h">
+      <Filter>Units</Filter>
+    </ClInclude>
+    <ClInclude Include="Units\GamePlayer.h">
+      <Filter>Units</Filter>
+    </ClInclude>
+    <ClInclude Include="Units\GameData.h">
+      <Filter>Units</Filter>
+    </ClInclude>
+    <ClInclude Include="Units\GamePlayerInput.h">
+      <Filter>Units</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\ToolsModel.h">
+      <Filter>Objects\ModelTool</Filter>
+    </ClInclude>
+    <ClInclude Include="Executes\ModelTool.h">
+      <Filter>Executes</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\Gizmo.h">
+      <Filter>Objects\Gizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\Bounding.h">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\BoundingBox.h">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\BoundingFrustum.h">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\BoundingSphere.h">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\Gjk.h">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\Ray.h">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\MathHelper.h">
+      <Filter>FrameWork\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Matrix.h">
+      <Filter>FrameWork\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Plane.h">
+      <Filter>FrameWork\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Point.h">
+      <Filter>FrameWork\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Quaternion.h">
+      <Filter>FrameWork\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Random.h">
+      <Filter>FrameWork\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Rect.h">
+      <Filter>FrameWork\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Vector2.h">
+      <Filter>FrameWork\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Vector3.h">
+      <Filter>FrameWork\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Vector4.h">
+      <Filter>FrameWork\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Template\Singleton.h">
+      <Filter>FrameWork\Template</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\GizmoComponent.h">
+      <Filter>Objects\Gizmo</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Executes">
+      <UniqueIdentifier>{9cf8f685-25e3-48a2-b6b3-b00c8505ac32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renders">
+      <UniqueIdentifier>{30f71ca6-86fc-4a07-8c55-3b9b4a221935}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems">
+      <UniqueIdentifier>{c2abd35d-375a-43b3-ba7e-7b4b24b403bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utilities">
+      <UniqueIdentifier>{409d6f39-6218-4c24-9e39-1646a0cde279}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Viewer">
+      <UniqueIdentifier>{cfbc03d8-52c3-41bd-9fd4-797036f4b8ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interfaces">
+      <UniqueIdentifier>{2068d558-4bde-4ab7-9107-5ddf5f311c2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fbx">
+      <UniqueIdentifier>{cb66040e-ceff-42bc-be85-b36c3e0a2221}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Model">
+      <UniqueIdentifier>{67ea5e5b-7821-4e39-b71d-11277ed185de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects">
+      <UniqueIdentifier>{0236d659-40b3-4e58-a234-a46bfeda1cbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Model">
+      <UniqueIdentifier>{8babaa0c-42a4-49fb-ad3a-e7da45f53324}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Animation">
+      <UniqueIdentifier>{1d9b58dc-79bf-4057-aed8-6c3f469e0a52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Units">
+      <UniqueIdentifier>{a3219e9d-f609-485c-8ba8-2756407efa2c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\ModelTool">
+      <UniqueIdentifier>{25d129be-18d5-48da-aa6c-c69e4e6d0c25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Objects\Gizmo">
+      <UniqueIdentifier>{cdcd6393-7e75-4dbd-ac2b-a638863ef704}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FrameWork">
+      <UniqueIdentifier>{baef5090-364c-4058-8060-0db4a48eb9fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FrameWork\Bounding">
+      <UniqueIdentifier>{e25654ef-67b4-42c0-91f7-592c4777be4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FrameWork\Core">
+      <UniqueIdentifier>{57712c5b-7593-427f-a212-b467201defca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FrameWork\Graphic">
+      <UniqueIdentifier>{1704c45e-3532-472f-9f9b-1010f7ef1785}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FrameWork\Template">
+      <UniqueIdentifier>{dead4d3e-a42d-4ba3-aa9e-23f8507efa5c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Systems\Mouse.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Time.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Window.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\D3D.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Keyboard.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Viewer\Viewport.cpp">
+      <Filter>Viewer</Filter>
+    </ClCompile>
+    <ClCompile Include="Viewer\Perspective.cpp">
+      <Filter>Viewer</Filter>
+    </ClCompile>
+    <ClCompile Include="Viewer\Camera.cpp">
+      <Filter>Viewer</Filter>
+    </ClCompile>
+    <ClCompile Include="Viewer\FirstPerson.cpp">
+      <Filter>Viewer</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Program.cpp" />
+    <ClCompile Include="Utilities\BinaryFile.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Executes\ExeGui.cpp">
+      <Filter>Executes</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilities\Path.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilities\Math.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Renders\Shader.cpp">
+      <Filter>Renders</Filter>
+    </ClCompile>
+    <ClCompile Include="Renders\States.cpp">
+      <Filter>Renders</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilities\String.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Renders\Material.cpp">
+      <Filter>Renders</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilities\Json.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Renders\RenderTarget.cpp">
+      <Filter>Renders</Filter>
+    </ClCompile>
+    <ClCompile Include="Viewer\Orthographic.cpp">
+      <Filter>Viewer</Filter>
+    </ClCompile>
+    <ClCompile Include="Fbx\Exporter.cpp">
+      <Filter>Fbx</Filter>
+    </ClCompile>
+    <ClCompile Include="Fbx\Utility.cpp">
+      <Filter>Fbx</Filter>
+    </ClCompile>
+    <ClCompile Include="Renders\Texture.cpp">
+      <Filter>Renders</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ModelMeshPart.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ModelReader.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Model.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ModelMesh.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Executes\DrawModel.cpp">
+      <Filter>Executes</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ModelBone.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ModelAnimClip.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ModelAnimPlayer.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\GameRender.cpp">
+      <Filter>Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Executes\ExportMesh.cpp">
+      <Filter>Executes</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\GameModel.cpp">
+      <Filter>Objects\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\GameSkyBox.cpp">
+      <Filter>Objects\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\GameWorld.cpp">
+      <Filter>Objects\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Fbx\XmlToAnim.cpp">
+      <Filter>Fbx</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilities\Xml.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Executes\ExportAnim.cpp">
+      <Filter>Executes</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\GameAnimationModel.cpp">
+      <Filter>Objects\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Units\GameUnit.cpp">
+      <Filter>Units</Filter>
+    </ClCompile>
+    <ClCompile Include="Units\GamePlayer.cpp">
+      <Filter>Units</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\ToolsModel.cpp">
+      <Filter>Objects\ModelTool</Filter>
+    </ClCompile>
+    <ClCompile Include="Executes\ModelTool.cpp">
+      <Filter>Executes</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\Gizmo.cpp">
+      <Filter>Objects\Gizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\BoundingBox.cpp">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\BoundingFrustum.cpp">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\BoundingSphere.cpp">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\Gjk.cpp">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Bounding\Ray.cpp">
+      <Filter>FrameWork\Bounding</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\MathHelper.cpp">
+      <Filter>FrameWork\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Matrix.cpp">
+      <Filter>FrameWork\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Plane.cpp">
+      <Filter>FrameWork\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Point.cpp">
+      <Filter>FrameWork\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Quaternion.cpp">
+      <Filter>FrameWork\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Random.cpp">
+      <Filter>FrameWork\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Rect.cpp">
+      <Filter>FrameWork\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Vector2.cpp">
+      <Filter>FrameWork\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Vector3.cpp">
+      <Filter>FrameWork\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Downloads\Day51ExamGizmo\Framework\Core\Vector4.cpp">
+      <Filter>FrameWork\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\GizmoComponent.cpp">
+      <Filter>Objects\Gizmo</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
